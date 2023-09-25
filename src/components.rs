@@ -1,16 +1,14 @@
 use leptos::*;
 use leptos::html::Input;
 
-use stylers::style_sheet;
 use web_sys::SubmitEvent;
 
 
 #[component]
 pub fn Introduction(game_started: ReadSignal<bool>,
                     set_game_started: WriteSignal<bool>,
-                    set_username: WriteSignal<String>) -> impl IntoView {
-    let class_name = style_sheet!("./style.css");
-
+                    set_username: WriteSignal<String>,
+                    class_name: &'static str) -> impl IntoView {
     let (enter_name_line, set_enter_name_line) = create_signal("Enter your name".to_string());
     let input_element: NodeRef<Input> = create_node_ref();
 

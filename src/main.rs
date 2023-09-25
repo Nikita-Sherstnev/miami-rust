@@ -7,11 +7,12 @@ use leptos::*;
 
 use stylers::style_sheet;
 
-struct Player {
-    health: u8,
+struct Character {
+    health: i8,
     strength: u8,
     agility: u8,
-    endurance: u8
+    endurance: u8,
+    block: bool
 }
 
 fn determine_attack(power: u8, agility: u8) -> u8 {
@@ -28,21 +29,55 @@ fn App() -> impl IntoView {
     let (username, set_username) = create_signal("---".to_string());
     let (game_started, set_game_started) = create_signal(false);
 
-    let (player_stats, set_player_stats) = create_signal(Player { health: 100, strength: 20, agility: 10, endurance: 5 });
-    let (opponent_stats, set_opponent_stats) = create_signal(Player { health: 100, strength: 20, agility: 10, endurance: 5 });
-
+    let (player_stats, set_player_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+    let (opponent_stats, set_opponent_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false });
 
     let attack = move |_| {
         let player_attack = determine_attack(player_stats.with(|x| x.strength),
                                                player_stats.with(|x| x.agility));
-        logging::log!("{}", player_attack);
+
+        if opponent_stats.with(|x| x.block) {
+            set_opponent_stats.update(move |x| x.health -= (player_attack / x.endurance) as i8);
+            if opponent_stats.with(|x| x.endurance) > 1 {
+                set_opponent_stats.update(move |x| x.endurance -= 1);
+            }
+            set_opponent_stats.update(move |x| x.block = false);
+        } else {
+            set_opponent_stats.update(move |x| x.health -= player_attack as i8);
+        }
+
+        if opponent_stats.with(|x| x.health) < 0 {
+            set_opponent_stats.update(move |x| x.health = 0);
+        }
+
+        set_player_stats.update(move |x| x.strength = x.strength - 5);
+        set_player_stats.update(move |x| x.block = false);
     };
 
     let render_game_buttons = move || {
-        if game_started() {
+        if game_started() && player_stats.with(|x| x.strength) > 0 {
             view! { class = class_name,
                 <button id="attack-button" on:click=attack>Hit</button>
                 <button id="protect-button" onclick="protect();">Block</button>
+            }.into_view()
+        } else if game_started() {
+            view! { class = class_name,
+                <button id="protect-button" onclick="protect();">Block</button>
+            }.into_view()
+        } else {
+            view! {""}.into_view()
+        }
+    };
+
+    let between_rounds = move || {
+        if opponent_stats.with(|x| x.health) == 0 {
+            view! { class = class_name,
+                <button id="next-opponent-button" onclick="nextOpponent();">Next opponent</button>
+                <button id="restart-button" onclick="restart();">Restart</button>
+            }.into_view()
+        } else if player_stats.with(|x| x.health) == 0 {
+            view! { class = class_name,
+                <button id="restart-button" onclick="restart();">Restart</button>
             }.into_view()
         } else {
             view! {""}.into_view()
@@ -55,7 +90,8 @@ fn App() -> impl IntoView {
 
             <Introduction game_started=game_started
                           set_game_started=set_game_started
-                          set_username=set_username/>
+                          set_username=set_username
+                          class_name=class_name />
             <div id="player">
 	     	<h3><span id="playerNameEnter">{username}</span></h3>
 	     	<img src="img/Player.jpg" alt="Your photo goes here" id="imgPlayer"/>
@@ -77,8 +113,7 @@ fn App() -> impl IntoView {
 
             {render_game_buttons}
 
-            <button id="next-opponent-button" hidden="true" onclick="nextOpponent();">Next opponent</button>
-            <button id="restart-button" hidden="true" onclick="restart();">Restart</button>
+            {between_rounds}
             <h3 id="game-message">...</h3>
 
         </div>
