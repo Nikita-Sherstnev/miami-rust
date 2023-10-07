@@ -21,7 +21,7 @@ fn determine_attack(power: u8, agility: u8) -> u8 {
     (random_number * max_attack) as u8
 }
 
-const img_opponents: [&str; 11] = ["Tony.jpg","Tony2.png","Crocodile.png","Richard.jpg","Rasmus.png","Rick.png",
+const IMG_OPPONENTS: [&str; 11] = ["Tony.jpg","Tony2.png","Crocodile.png","Richard.jpg","Rasmus.png","Rick.png",
                                    "Bat.jpg","Fish.png","Giraffe.png","Pig.png","Pantera.jpg"];
 
 
@@ -139,14 +139,14 @@ fn App() -> impl IntoView {
         set_opponent_stats.update(move |x| x.strength += 5 * round() as u8);
 
         set_round.update(move |x| *x += 1);
-        set_img_opponent.update(move |x| *x = "img/".to_owned() + img_opponents[round() - 1]);
+        set_img_opponent.update(move |x| *x = "img/".to_owned() + IMG_OPPONENTS[round() - 1]);
 
         set_game_message.set("...".to_string());
     };
 
     let restart = move |_| {
         set_round.set(1);
-        set_img_opponent.update(move |x| *x = "img/".to_owned() + img_opponents[round() - 1]);
+        set_img_opponent.update(move |x| *x = "img/".to_owned() + IMG_OPPONENTS[round() - 1]);
 
         set_player_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
         set_opponent_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
@@ -169,14 +169,14 @@ fn App() -> impl IntoView {
     };
 
     view! { class = class_name,
-        <div id="gameZone">
+        <div class="gameZone">
             <div class="titleGame">"MIAMI FIGHT"</div>
 
             <Introduction game_started=game_started
                           set_game_started=set_game_started
                           set_username=set_username
                           class_name=class_name />
-            <div id="player">
+            <div class="character">
 	     	<h3><span id="playerNameEnter">{username}</span></h3>
 	     	<img src="img/Player.jpg" alt="Your photo goes here" id="imgPlayer"/>
 	     	<h4>Health: <span>{move || player_stats.with(|x| x.health)}</span></h4>
@@ -184,7 +184,7 @@ fn App() -> impl IntoView {
 	   		<h4>Agility: <span>{move || player_stats.with(|x| x.agility)}</span></h4>
 	        </div>
 
-	        <div id="opponent">
+	        <div class="character">
 	        <h3>Opponent</h3>
 	        <img src={img_opponent} id="imgOpponent" alt="Тони" id="imgOpponent"/>
             <h4>Health: <span>{move || opponent_stats.with(|x| x.health)}</span></h4>
