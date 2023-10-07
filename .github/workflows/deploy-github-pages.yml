@@ -34,6 +34,8 @@ jobs:
       - name: Install dependencies
         run: |
           cargo install trunk || true \
+            && rustup install nightly \
+            && rustup default nightly \
             && rustup target add wasm32-unknown-unknown
 
       - name: Build the Rust WASM app and all of its assets
