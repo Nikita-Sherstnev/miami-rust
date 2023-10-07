@@ -32,6 +32,46 @@ fn App() -> impl IntoView {
     let (player_stats, set_player_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
     let (opponent_stats, set_opponent_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false });
 
+    let (game_message, set_game_message) = create_signal("...".to_string());
+
+
+    let opponent_attack = move || {
+        let opponent_attack = determine_attack(opponent_stats.with(|x| x.strength),
+                                                 opponent_stats.with(|x| x.agility));
+
+        if player_stats.with(|x| x.block) {
+            set_player_stats.update(move |x| x.health -= (opponent_attack / x.endurance) as i8);
+            if player_stats.with(|x| x.endurance) > 1 {
+                set_player_stats.update(move |x| x.endurance -= 1);
+            }
+            set_player_stats.update(move |x| x.block = false);
+        } else {
+            set_player_stats.update(move |x| x.health -= opponent_attack as i8);
+        }
+
+        if player_stats.with(|x| x.health) < 0 {
+            set_player_stats.update(move |x| x.health = 0);
+        }
+
+        set_opponent_stats.update(move |x| x.strength = x.strength - 5);
+        set_opponent_stats.update(move |x| x.block = false);
+    };
+
+    let opponent_block = move || {
+        set_opponent_stats.update(move |x| x.block = true);
+        set_opponent_stats.update(move |x| x.strength = x.strength + 5);
+    };
+
+    let opponent_action = move || {
+        if opponent_stats.with(|x| x.strength == 0) || rand::thread_rng().gen::<f64>() > 0.5 {
+            set_game_message.update(move |x| *x = "Opponent blocks".to_string());
+            opponent_block();
+        } else {
+            set_game_message.update(move |x| *x = "Opponent attacks".to_string());
+            opponent_attack();
+        }
+    };
+
     let attack = move |_| {
         let player_attack = determine_attack(player_stats.with(|x| x.strength),
                                                player_stats.with(|x| x.agility));
@@ -52,18 +92,35 @@ fn App() -> impl IntoView {
 
         set_player_stats.update(move |x| x.strength = x.strength - 5);
         set_player_stats.update(move |x| x.block = false);
+
+        if player_stats.with(|x| x.health) > 0 {
+            opponent_action();
+        }
+    };
+
+    let block = move |_| {
+        set_player_stats.update(move |x| x.block = true);
+        set_player_stats.update(move |x| x.strength = x.strength + 5);
+
+        if player_stats.with(|x| x.health) > 0 {
+            opponent_action();
+        }
     };
 
     let render_game_buttons = move || {
-        if game_started() && player_stats.with(|x| x.strength) > 0 {
-            view! { class = class_name,
-                <button id="attack-button" on:click=attack>Hit</button>
-                <button id="protect-button" onclick="protect();">Block</button>
-            }.into_view()
-        } else if game_started() {
-            view! { class = class_name,
-                <button id="protect-button" onclick="protect();">Block</button>
-            }.into_view()
+        if player_stats.with(|x| x.health) > 0 && opponent_stats.with(|x| x.health) > 0 {
+            if game_started() && player_stats.with(|x| x.strength) > 0 {
+                view! { class = class_name,
+                    <button id="attack-button" on:click=attack>Hit</button>
+                    <button id="protect-button" on:click=block>Block</button>
+                }.into_view()
+            } else if game_started() {
+                view! { class = class_name,
+                    <button id="protect-button" on:click=block>Block</button>
+                }.into_view()
+            } else {
+                view! {""}.into_view()
+            }
         } else {
             view! {""}.into_view()
         }
@@ -114,7 +171,7 @@ fn App() -> impl IntoView {
             {render_game_buttons}
 
             {between_rounds}
-            <h3 id="game-message">...</h3>
+            <h3 id="game-message">{game_message}</h3>
 
         </div>
     }
