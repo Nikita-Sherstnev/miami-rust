@@ -21,6 +21,9 @@ fn determine_attack(power: u8, agility: u8) -> u8 {
     (random_number * max_attack) as u8
 }
 
+const img_opponents: [&str; 11] = ["Tony.jpg","Tony2.png","Crocodile.png","Richard.jpg","Rasmus.png","Rick.png",
+                                   "Bat.jpg","Fish.png","Giraffe.png","Pig.png","Pantera.jpg"];
+
 
 #[component]
 fn App() -> impl IntoView {
@@ -34,6 +37,8 @@ fn App() -> impl IntoView {
 
     let (game_message, set_game_message) = create_signal("...".to_string());
 
+    let (round, set_round) = create_signal(1);
+    let (img_opponent, set_img_opponent) = create_signal("img/Tony.jpg".to_string());
 
     let opponent_attack = move || {
         let opponent_attack = determine_attack(opponent_stats.with(|x| x.strength),
@@ -51,6 +56,7 @@ fn App() -> impl IntoView {
 
         if player_stats.with(|x| x.health) < 0 {
             set_player_stats.update(move |x| x.health = 0);
+            set_game_message.set("You lost".to_string());
         }
 
         set_opponent_stats.update(move |x| x.strength = x.strength - 5);
@@ -88,12 +94,13 @@ fn App() -> impl IntoView {
 
         if opponent_stats.with(|x| x.health) < 0 {
             set_opponent_stats.update(move |x| x.health = 0);
+            set_game_message.set("You won".to_string());
         }
 
         set_player_stats.update(move |x| x.strength = x.strength - 5);
         set_player_stats.update(move |x| x.block = false);
 
-        if player_stats.with(|x| x.health) > 0 {
+        if opponent_stats.with(|x| x.health) > 0 {
             opponent_action();
         }
     };
@@ -102,7 +109,7 @@ fn App() -> impl IntoView {
         set_player_stats.update(move |x| x.block = true);
         set_player_stats.update(move |x| x.strength = x.strength + 5);
 
-        if player_stats.with(|x| x.health) > 0 {
+        if opponent_stats.with(|x| x.health) > 0 {
             opponent_action();
         }
     };
@@ -126,15 +133,35 @@ fn App() -> impl IntoView {
         }
     };
 
+    let next_opponent = move |_| {
+        set_player_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_opponent_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_opponent_stats.update(move |x| x.strength += 5 * round() as u8);
+
+        set_round.update(move |x| *x += 1);
+        set_img_opponent.update(move |x| *x = "img/".to_owned() + img_opponents[round() - 1]);
+
+        set_game_message.set("...".to_string());
+    };
+
+    let restart = move |_| {
+        set_round.set(1);
+        set_img_opponent.update(move |x| *x = "img/".to_owned() + img_opponents[round() - 1]);
+
+        set_player_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_opponent_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_game_message.set("...".to_string());
+    };
+
     let between_rounds = move || {
         if opponent_stats.with(|x| x.health) == 0 {
             view! { class = class_name,
-                <button id="next-opponent-button" onclick="nextOpponent();">Next opponent</button>
-                <button id="restart-button" onclick="restart();">Restart</button>
+                <button id="next-opponent-button" on:click=next_opponent>Next opponent</button>
+                <button id="restart-button" on:click=restart>Restart</button>
             }.into_view()
         } else if player_stats.with(|x| x.health) == 0 {
             view! { class = class_name,
-                <button id="restart-button" onclick="restart();">Restart</button>
+                <button id="restart-button" on:click=restart>Restart</button>
             }.into_view()
         } else {
             view! {""}.into_view()
@@ -159,14 +186,14 @@ fn App() -> impl IntoView {
 
 	        <div id="opponent">
 	        <h3>Opponent</h3>
-	        <img src="img/Tony.jpg" id="imgOpponent" alt="Тони" id="imgOpponent"/>
+	        <img src={img_opponent} id="imgOpponent" alt="Тони" id="imgOpponent"/>
             <h4>Health: <span>{move || opponent_stats.with(|x| x.health)}</span></h4>
             <h4>Strength: <span>{move || opponent_stats.with(|x| x.strength)}</span></h4>
 	   	    <h4>Agility: <span>{move || opponent_stats.with(|x| x.agility)}</span></h4>
             </div>
 
 		    <br/>
-		    <h3><span id="round">Round 1</span></h3>
+		    <h3><span id="round">Round {round}</span></h3>
 
             {render_game_buttons}
 
