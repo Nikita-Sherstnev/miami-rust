@@ -12,7 +12,7 @@ struct Character {
     strength: u8,
     agility: u8,
     endurance: u8,
-    block: bool
+    block: bool,
 }
 
 fn determine_attack(power: u8, agility: u8) -> u8 {
@@ -21,9 +21,27 @@ fn determine_attack(power: u8, agility: u8) -> u8 {
     (random_number * max_attack) as u8
 }
 
-const IMG_OPPONENTS: [&str; 11] = ["Tony.jpg","Tony2.png","Crocodile.png","Richard.jpg","Rasmus.png","Rick.png",
-                                   "Bat.jpg","Fish.png","Giraffe.png","Pig.png","Pantera.jpg"];
+const IMG_OPPONENTS: [&str; 11] = [
+    "Tony.jpg",
+    "Tony2.png",
+    "Crocodile.png",
+    "Richard.jpg",
+    "Rasmus.png",
+    "Rick.png",
+    "Bat.jpg",
+    "Fish.png",
+    "Giraffe.png",
+    "Pig.png",
+    "Pantera.jpg",
+];
 
+const DEFAULT_STATS_CHARACTER: Character = Character {
+    health: 100,
+    strength: 20,
+    agility: 10,
+    endurance: 5,
+    block: false,
+};
 
 #[component]
 fn App() -> impl IntoView {
@@ -32,8 +50,8 @@ fn App() -> impl IntoView {
     let (username, set_username) = create_signal("---".to_string());
     let (game_started, set_game_started) = create_signal(false);
 
-    let (player_stats, set_player_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
-    let (opponent_stats, set_opponent_stats) = create_signal(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false });
+    let (player_stats, set_player_stats) = create_signal(DEFAULT_STATS_CHARACTER);
+    let (opponent_stats, set_opponent_stats) = create_signal(DEFAULT_STATS_CHARACTER);
 
     let (game_message, set_game_message) = create_signal("...".to_string());
 
@@ -41,8 +59,10 @@ fn App() -> impl IntoView {
     let (img_opponent, set_img_opponent) = create_signal("img/Tony.jpg".to_string());
 
     let opponent_attack = move || {
-        let opponent_attack = determine_attack(opponent_stats.with(|x| x.strength),
-                                                 opponent_stats.with(|x| x.agility));
+        let opponent_attack = determine_attack(
+            opponent_stats.with(|x| x.strength),
+            opponent_stats.with(|x| x.agility),
+        );
 
         if player_stats.with(|x| x.block) {
             set_player_stats.update(move |x| x.health -= (opponent_attack / x.endurance) as i8);
@@ -79,8 +99,10 @@ fn App() -> impl IntoView {
     };
 
     let attack = move |_| {
-        let player_attack = determine_attack(player_stats.with(|x| x.strength),
-                                               player_stats.with(|x| x.agility));
+        let player_attack = determine_attack(
+            player_stats.with(|x| x.strength),
+            player_stats.with(|x| x.agility),
+        );
 
         if opponent_stats.with(|x| x.block) {
             set_opponent_stats.update(move |x| x.health -= (player_attack / x.endurance) as i8);
@@ -120,11 +142,13 @@ fn App() -> impl IntoView {
                 view! { class = class_name,
                     <button id="attack-button" on:click=attack>Hit</button>
                     <button id="protect-button" on:click=block>Block</button>
-                }.into_view()
+                }
+                .into_view()
             } else if game_started() {
                 view! { class = class_name,
                     <button id="protect-button" on:click=block>Block</button>
-                }.into_view()
+                }
+                .into_view()
             } else {
                 view! {""}.into_view()
             }
@@ -134,8 +158,8 @@ fn App() -> impl IntoView {
     };
 
     let next_opponent = move |_| {
-        set_player_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
-        set_opponent_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_player_stats.set(DEFAULT_STATS_CHARACTER);
+        set_opponent_stats.set(DEFAULT_STATS_CHARACTER);
         set_opponent_stats.update(move |x| x.strength += 5 * round() as u8);
 
         set_round.update(move |x| *x += 1);
@@ -148,8 +172,8 @@ fn App() -> impl IntoView {
         set_round.set(1);
         set_img_opponent.update(move |x| *x = "img/".to_owned() + IMG_OPPONENTS[round() - 1]);
 
-        set_player_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
-        set_opponent_stats.set(Character { health: 100, strength: 20, agility: 10, endurance: 5, block: false});
+        set_player_stats.set(DEFAULT_STATS_CHARACTER);
+        set_opponent_stats.set(DEFAULT_STATS_CHARACTER);
         set_game_message.set("...".to_string());
     };
 
@@ -158,11 +182,13 @@ fn App() -> impl IntoView {
             view! { class = class_name,
                 <button id="next-opponent-button" on:click=next_opponent>Next opponent</button>
                 <button id="restart-button" on:click=restart>Restart</button>
-            }.into_view()
+            }
+            .into_view()
         } else if player_stats.with(|x| x.health) == 0 {
             view! { class = class_name,
                 <button id="restart-button" on:click=restart>Restart</button>
-            }.into_view()
+            }
+            .into_view()
         } else {
             view! {""}.into_view()
         }
@@ -177,23 +203,23 @@ fn App() -> impl IntoView {
                           set_username=set_username
                           class_name=class_name />
             <div class="character">
-	     	<h3><span id="playerNameEnter">{username}</span></h3>
-	     	<img src="img/Player.jpg" alt="Your photo goes here" id="imgPlayer"/>
-	     	<h4>Health: <span>{move || player_stats.with(|x| x.health)}</span></h4>
-	     	<h4>Strength: <span>{move || player_stats.with(|x| x.strength)}</span></h4>
-	   		<h4>Agility: <span>{move || player_stats.with(|x| x.agility)}</span></h4>
-	        </div>
-
-	        <div class="character">
-	        <h3>Opponent</h3>
-	        <img src={img_opponent} id="imgOpponent" alt="Тони" id="imgOpponent"/>
-            <h4>Health: <span>{move || opponent_stats.with(|x| x.health)}</span></h4>
-            <h4>Strength: <span>{move || opponent_stats.with(|x| x.strength)}</span></h4>
-	   	    <h4>Agility: <span>{move || opponent_stats.with(|x| x.agility)}</span></h4>
+                <h3><span id="playerNameEnter">{username}</span></h3>
+                <img src="img/Player.jpg" alt="Your photo goes here" id="imgPlayer"/>
+                <h4>Health: <span>{move || player_stats.with(|x| x.health)}</span></h4>
+                <h4>Strength: <span>{move || player_stats.with(|x| x.strength)}</span></h4>
+                <h4>Agility: <span>{move || player_stats.with(|x| x.agility)}</span></h4>
             </div>
 
-		    <br/>
-		    <h3><span id="round">Round {round}</span></h3>
+            <div class="character">
+                <h3>Opponent</h3>
+                <img src={img_opponent} id="imgOpponent" id="imgOpponent"/>
+                <h4>Health: <span>{move || opponent_stats.with(|x| x.health)}</span></h4>
+                <h4>Strength: <span>{move || opponent_stats.with(|x| x.strength)}</span></h4>
+                <h4>Agility: <span>{move || opponent_stats.with(|x| x.agility)}</span></h4>
+            </div>
+
+            <br/>
+            <h3><span id="round">Round {round}</span></h3>
 
             {render_game_buttons}
 
@@ -202,9 +228,7 @@ fn App() -> impl IntoView {
 
         </div>
     }
-
 }
-
 
 fn main() {
     mount_to_body(App)
