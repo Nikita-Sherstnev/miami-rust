@@ -1,4 +1,6 @@
 mod components;
+use std::thread::current;
+
 use crate::components::*;
 
 use rand::prelude::*;
@@ -19,6 +21,10 @@ fn determine_attack(power: u8, agility: u8) -> u8 {
     let random_number = rand::thread_rng().gen::<f64>();
     let max_attack = (power + agility) as f64;
     (random_number * max_attack) as u8
+}
+
+fn calc_new_stats(attacker_stats: Character, victim_stats: Character) {
+
 }
 
 const IMG_OPPONENTS: [&str; 11] = [
@@ -43,9 +49,16 @@ const DEFAULT_STATS_CHARACTER: Character = Character {
     block: false,
 };
 
+enum CurrentTurn {
+    Player,
+    Opponent,
+    Over
+}
+
 #[component]
 fn App() -> impl IntoView {
     let class_name = style_sheet!("./style.css");
+    let current_turn = CurrentTurn::Player;
 
     let (username, set_username) = create_signal("---".to_string());
     let (game_started, set_game_started) = create_signal(false);
@@ -124,6 +137,15 @@ fn App() -> impl IntoView {
 
         if opponent_stats.with(|x| x.health) > 0 {
             opponent_action();
+        }
+    };
+
+    let attack_2 = move |_| {
+        match current_turn {
+            CurrentTurn::Player => {
+
+            },
+            CurrentTurn::Opponent
         }
     };
 

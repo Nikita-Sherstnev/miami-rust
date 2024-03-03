@@ -1,3 +1,6 @@
+[package.metadata.leptos]
+output-name = "miami-rust"
+
 [package]
 name = "miami-rust"
 version = "0.1.0"
